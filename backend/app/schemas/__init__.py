@@ -2,6 +2,7 @@
 
 from app.schemas.audit import AuditLog
 from app.schemas.conflict import Conflict
+from app.schemas.document import DocumentListItem, DocumentUploadResponse
 from app.schemas.observation import Observation
 from app.schemas.patient import PatientCreate, PatientRecord, PatientUpdate
 from app.schemas.provenance import Provenance
@@ -11,9 +12,12 @@ __all__ = [
     "AuditLog",
     "Conflict",
     "DiagnosticReport",
+    "DocumentListItem",
+    "DocumentUploadResponse",
     "Observation",
     "PatientCreate",
     "PatientRecord",
     "PatientUpdate",
     "Provenance",
 ]
+

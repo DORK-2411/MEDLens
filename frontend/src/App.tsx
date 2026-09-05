@@ -14,6 +14,19 @@ interface PatientRecord {
   audit_log?: unknown[]
 }
 
+interface DocumentItem {
+  document_id: string
+  patient_id: string
+  filename: string
+  content_type: string
+  file_size_bytes: number
+  processing_status: 'PENDING' | 'TEXT_EXTRACTED' | 'OCR_REQUIRED' | 'PROCESSING_FAILED'
+  page_count?: number | null
+  extracted_text?: string | null
+  error_message?: string | null
+  created_at: string
+}
+
 const API_BASE_URL = 'http://127.0.0.1:8000'
 
 function App() {
@@ -29,6 +42,70 @@ function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [createdPatient, setCreatedPatient] = useState<PatientRecord | null>(null)
+
+  // Document ingestion state
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null)
+  const [documents, setDocuments] = useState<DocumentItem[]>([])
+
+  const fetchPatientDocuments = async (pId: string) => {
+    try {
+      const resp = await fetch(`${API_BASE_URL}/api/patients/${pId}/documents`)
+      if (resp.ok) {
+        const data: DocumentItem[] = await resp.json()
+        setDocuments(data)
+      }
+    } catch {
+      // Ignore background fetch failure
+    }
+  }
+
+  const handleDocumentUpload = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!createdPatient || !selectedFile) return
+
+    setIsUploading(true)
+    setUploadError(null)
+    setUploadSuccess(null)
+
+    const formData = new FormData()
+    formData.append('file', selectedFile)
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/patients/${createdPatient.patient_id}/documents`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      )
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => null)
+        const detail = errData?.detail || `Error ${response.status}: ${response.statusText}`
+        throw new Error(typeof detail === 'string' ? detail : JSON.stringify(detail))
+      }
+
+      const doc: DocumentItem = await response.json()
+      setUploadSuccess(`Document "${doc.filename}" uploaded successfully (${doc.processing_status})`)
+      setSelectedFile(null)
+      // Reset file input element
+      const fileInput = document.getElementById('reportFileInput') as HTMLInputElement | null
+      if (fileInput) fileInput.value = ''
+
+      await fetchPatientDocuments(createdPatient.patient_id)
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setUploadError(err.message)
+      } else {
+        setUploadError('Failed to upload document')
+      }
+    } finally {
+      setIsUploading(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -93,6 +170,7 @@ function App() {
 
       const data: PatientRecord = await response.json()
       setCreatedPatient(data)
+      await fetchPatientDocuments(data.patient_id)
     } catch (err: unknown) {
       if (err instanceof Error) {
         setErrorMessage(err.message)
@@ -115,6 +193,10 @@ function App() {
     setNotes('')
     setCreatedPatient(null)
     setErrorMessage(null)
+    setSelectedFile(null)
+    setDocuments([])
+    setUploadError(null)
+    setUploadSuccess(null)
   }
 
   return (
@@ -253,49 +335,142 @@ function App() {
         </section>
 
         {createdPatient && (
-          <section className="record-card">
-            <h3>Created Patient Information</h3>
-            <div className="record-details">
-              <p>
-                <strong>Patient ID:</strong> <code>{createdPatient.patient_id}</code>
-              </p>
-              <p>
-                <strong>Age:</strong> {createdPatient.age !== null && createdPatient.age !== undefined ? createdPatient.age : 'Not specified'}
-              </p>
-              <p>
-                <strong>Sex:</strong> {createdPatient.sex || 'Not specified'}
-              </p>
-              <p>
-                <strong>Symptoms:</strong>{' '}
-                {createdPatient.symptoms.length > 0
-                  ? createdPatient.symptoms.join(', ')
-                  : 'None reported'}
-              </p>
-              <p>
-                <strong>Conditions:</strong>{' '}
-                {createdPatient.conditions.length > 0
-                  ? createdPatient.conditions.join(', ')
-                  : 'None reported'}
-              </p>
-              <p>
-                <strong>Allergies:</strong>{' '}
-                {createdPatient.allergies.length > 0
-                  ? createdPatient.allergies.join(', ')
-                  : 'No known allergies'}
-              </p>
-              <p>
-                <strong>Medications:</strong>{' '}
-                {createdPatient.medications.length > 0
-                  ? createdPatient.medications.join(', ')
-                  : 'No medications reported'}
-              </p>
-              {createdPatient.notes && (
+          <>
+            <section className="record-card">
+              <h3>Created Patient Information</h3>
+              <div className="record-details">
                 <p>
-                  <strong>Notes:</strong> {createdPatient.notes}
+                  <strong>Patient ID:</strong> <code>{createdPatient.patient_id}</code>
                 </p>
+                <p>
+                  <strong>Age:</strong> {createdPatient.age !== null && createdPatient.age !== undefined ? createdPatient.age : 'Not specified'}
+                </p>
+                <p>
+                  <strong>Sex:</strong> {createdPatient.sex || 'Not specified'}
+                </p>
+                <p>
+                  <strong>Symptoms:</strong>{' '}
+                  {createdPatient.symptoms.length > 0
+                    ? createdPatient.symptoms.join(', ')
+                    : 'None reported'}
+                </p>
+                <p>
+                  <strong>Conditions:</strong>{' '}
+                  {createdPatient.conditions.length > 0
+                    ? createdPatient.conditions.join(', ')
+                    : 'None reported'}
+                </p>
+                <p>
+                  <strong>Allergies:</strong>{' '}
+                  {createdPatient.allergies.length > 0
+                    ? createdPatient.allergies.join(', ')
+                    : 'No known allergies'}
+                </p>
+                <p>
+                  <strong>Medications:</strong>{' '}
+                  {createdPatient.medications.length > 0
+                    ? createdPatient.medications.join(', ')
+                    : 'No medications reported'}
+                </p>
+                {createdPatient.notes && (
+                  <p>
+                    <strong>Notes:</strong> {createdPatient.notes}
+                  </p>
+                )}
+              </div>
+            </section>
+
+            {/* Medical Report Ingestion (Phase 4) */}
+            <section className="form-card document-upload-card">
+              <h2>Upload Medical Document / Report</h2>
+              <p className="section-desc">
+                Upload clinical reports (PDF, PNG, JPEG). Text is automatically extracted or marked for OCR.
+              </p>
+
+              {uploadError && (
+                <div className="alert alert-error">
+                  <strong>Upload Error:</strong> {uploadError}
+                </div>
               )}
-            </div>
-          </section>
+
+              {uploadSuccess && (
+                <div className="alert alert-success">
+                  {uploadSuccess}
+                </div>
+              )}
+
+              <form onSubmit={handleDocumentUpload} className="intake-form">
+                <div className="form-group">
+                  <label htmlFor="reportFileInput">Select File (PDF, PNG, JPG — max 20 MB):</label>
+                  <input
+                    id="reportFileInput"
+                    type="file"
+                    accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        setSelectedFile(e.target.files[0])
+                        setUploadError(null)
+                        setUploadSuccess(null)
+                      }
+                    }}
+                  />
+                </div>
+
+                <div className="form-actions">
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={isUploading || !selectedFile}
+                  >
+                    {isUploading ? 'Uploading & Processing...' : 'Upload Document'}
+                  </button>
+                </div>
+              </form>
+
+              {/* Documents List */}
+              <div className="documents-list-section">
+                <h3>Uploaded Documents ({documents.length})</h3>
+                {documents.length === 0 ? (
+                  <p className="text-muted">No documents uploaded yet for this patient.</p>
+                ) : (
+                  <div className="documents-grid">
+                    {documents.map((doc) => (
+                      <div key={doc.document_id} className="document-item-card">
+                        <div className="doc-header">
+                          <span className="doc-name">{doc.filename}</span>
+                          <span className={`status-badge status-${doc.processing_status.toLowerCase()}`}>
+                            {doc.processing_status}
+                          </span>
+                        </div>
+                        <div className="doc-meta">
+                          <span>ID: <code>{doc.document_id}</code></span>
+                          <span>Size: {(doc.file_size_bytes / 1024).toFixed(1)} KB</span>
+                          {doc.page_count && <span>Pages: {doc.page_count}</span>}
+                          <span>Uploaded: {new Date(doc.created_at).toLocaleTimeString()}</span>
+                        </div>
+                        {doc.processing_status === 'OCR_REQUIRED' && (
+                          <div className="doc-notice ocr-notice">
+                            Image/scanned format detected — queued for OCR processing.
+                          </div>
+                        )}
+                        {doc.processing_status === 'TEXT_EXTRACTED' && doc.extracted_text && (
+                          <div className="doc-extracted-preview">
+                            <strong>Extracted Text Preview:</strong>
+                            <pre>{doc.extracted_text.slice(0, 300)}{doc.extracted_text.length > 300 ? '...' : ''}</pre>
+                          </div>
+                        )}
+                        {doc.error_message && (
+                          <div className="doc-notice error-notice">
+                            {doc.error_message}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+          </>
         )}
       </main>
     </div>

@@ -177,3 +177,141 @@ textarea:focus {
   color: #93c5fd;
   font-family: monospace;
 }
+
+/* Document Upload & List Styles */
+.section-desc {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-top: -12px;
+  margin-bottom: 20px;
+}
+
+.documents-list-section {
+  margin-top: 28px;
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+}
+
+.documents-list-section h3 {
+  margin-top: 0;
+  font-size: 1.1rem;
+  color: #e2e8f0;
+}
+
+.text-muted {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+.documents-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.document-item-card {
+  background: #0f172a;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.doc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.doc-name {
+  font-weight: 600;
+  color: #f1f5f9;
+  font-size: 1rem;
+}
+
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.status-text_extracted {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid #10b981;
+}
+
+.status-ocr_required {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid #f59e0b;
+}
+
+.status-pending {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  border: 1px solid #3b82f6;
+}
+
+.status-processing_failed {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid #ef4444;
+}
+
+.doc-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.doc-notice {
+  font-size: 0.85rem;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-top: 8px;
+}
+
+.ocr-notice {
+  background: rgba(245, 158, 11, 0.1);
+  color: #fbbf24;
+  border-left: 3px solid #f59e0b;
+}
+
+.error-notice {
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  border-left: 3px solid #ef4444;
+}
+
+.doc-extracted-preview {
+  margin-top: 10px;
+  font-size: 0.85rem;
+}
+
+.doc-extracted-preview strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #cbd5e1;
+}
+
+.doc-extracted-preview pre {
+  margin: 0;
+  padding: 8px 12px;
+  background: #020617;
+  border-radius: 4px;
+  color: #a5b4fc;
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
